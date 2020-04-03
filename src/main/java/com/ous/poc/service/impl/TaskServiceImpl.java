@@ -8,6 +8,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -40,24 +42,29 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class TaskServiceImpl implements TaskService {
 
+	private static final String PRIORITY = "priority";
+	private static final String DUE_AT = "dueAt";
+
 	private TaskRepository taskRepository;
 	private ModelMapper modelMapper;
 	private SchedulerService schedulerService;
+	private final List<Sort.Order> sortOrders;
 
 	public TaskServiceImpl(SchedulerService schedulerService, TaskRepository taskRepository, ModelMapper modelMapper) {
 
 		this.schedulerService = schedulerService;
 		this.taskRepository = taskRepository;
 		this.modelMapper = modelMapper;
+
+		sortOrders = new ArrayList<>();
+		sortOrders.add(new Sort.Order(Sort.Direction.ASC, DUE_AT));
+		sortOrders.add(new Sort.Order(Sort.Direction.DESC, PRIORITY));
 	}
 
 	@Override
 	public Tasks findAll(Pageable pageable) {
 		Tasks tasks = new Tasks();
-		List<Sort.Order> orders = new ArrayList<>();
-		orders.add(new Sort.Order(Sort.Direction.ASC, "dueAt"));
-		orders.add(new Sort.Order(Sort.Direction.DESC, "priority"));
-		PageRequest pageRequest = PageRequest.of(pageable.getPageNo(), pageable.getPageSize(), Sort.by(orders));
+		PageRequest pageRequest = PageRequest.of(pageable.getPageNo(), pageable.getPageSize(), Sort.by(sortOrders));
 		Page<Task> taskPages = taskRepository.findAll(pageRequest);
 		tasks.setTaskList(
 				taskPages.stream().map(task -> modelMapper.map(task, TaskResponse.class)).collect(Collectors.toList()));
@@ -101,7 +108,8 @@ public class TaskServiceImpl implements TaskService {
 			now.add(Calendar.SECOND, t.getDelayInSeconds());
 			t.setDueAt(now.getTime());
 			Task persistedTask = taskRepository.save(t);
-			SchedulableTask schedulableTask = new SchedulableTask(taskId, t.getDelayInSeconds(), new TaskExecution(persistedTask));
+			SchedulableTask schedulableTask = new SchedulableTask(taskId, t.getDelayInSeconds(),
+					new TaskExecution(persistedTask));
 			schedulerService.scheduleTask(schedulableTask);
 			return modelMapper.map(t, TaskResponse.class);
 		}).orElseThrow(() -> new ServiceException(Error.NOT_FOUND, Task.class.getSimpleName()));
@@ -124,6 +132,26 @@ public class TaskServiceImpl implements TaskService {
 		taskRepository.save(persistedTask);
 		TaskResponse taskResponse = modelMapper.map(persistedTask, TaskResponse.class);
 		return taskResponse;
+	}
+
+	/**
+	 * Re-Schedule all the tasks, if any, that are available in the database except
+	 * suspended ones. We have to do it as current implementation of
+	 * {@link SchedulerService} uses {@link ScheduledThreadPoolExecutor}. It is
+	 * required in case when server is shutdown and we want to re-associated our non
+	 * suspended tasks to the scheduler.
+	 * 
+	 * @param event
+	 */
+	@EventListener
+	public void onApplicationEvent(ContextRefreshedEvent event) {
+
+		String suspendedStatus = TaskStatus.SUSPENDED.getValue();
+		List<Task> tasks = taskRepository.findByStatusIsNotLike(suspendedStatus);
+		log.info("preparing to schedule {} tasks to startup.", tasks.size());
+		tasks.forEach(t -> schedulerService
+				.scheduleTask(new SchedulableTask(t.getId(), t.getDelayInSeconds(), new TaskExecution(t))));
+
 	}
 
 	private class TaskExecution implements Runnable {
