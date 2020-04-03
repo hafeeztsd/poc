@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: poc
+
+  jpa:
+    show-sql: true
+    hibernate.ddl-auto: update
+      
+  flyway:
+    enabled: true
+    schemas:
+    - TASK_MANAGEMENT
+      
+logging:
+  level:
+    ROOT: ${LOG_LEVEL:info}    
+    
+app:    
+ config:
+   pool-size: 10
+   initial-delay: 5
+   max-delay: 20
+       

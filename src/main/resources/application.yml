@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: poc
+
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://mysqlhost/task_management}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    platform: mysql
+    driver-class-name: com.mysql.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${MAX_DB_POOL_SIZE:15}  
+  jpa:
+    show-sql: false
+    hibernate.ddl-auto: update
+  flyway:
+    enabled: true
+    url: ${DB_URL:jdbc:mysql://mysqlhost/}
+    user: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    schemas:
+    - task_management    
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+
+app:    
+ config:
+   pool-size: 10
+   initial-delay: 10
+   max-delay: 100
+     
