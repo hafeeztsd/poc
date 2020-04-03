@@ -3,7 +3,6 @@ package com.ous.poc.service.impl;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -42,14 +41,26 @@ public class SchedulerServiceImpl implements SchedulerService {
 
 	/**
 	 * Schedule the given task with provided details along with an initial and
-	 * random delay.
+	 * random delay. <br>
 	 * 
-	 * @return {@link Future} for the scheduled task.
+	 * Random delay will not be calculated for all those tasks that are suspended
+	 * and user want to resume them. Same random delay will be used when the were
+	 * suspended. <br>
+	 * 
+	 * In most of the cases the initial configured delay, app.config.initial-delay,
+	 * is used. However if user wants to postpone a task for some future date than
+	 * initial delay would be calculated based on following formula instead of
+	 * taking it from the configuration. <br>
+	 * 
+	 * initialDelay = schedulableTask.getPosponeDate().getTime() - System.currentTimeMillis(); 
+	 * 
+	 * @return the random delay associated with this task.
 	 */
 	@Override
 	public int scheduleTask(SchedulableTask schedulableTask) {
 
 		int randomDelay;
+		long initialDelay = applicationConfig.getInitialDelay();
 
 		if (schedulableTask.getRandomDelay() == null) {
 			randomDelay = random.nextInt((applicationConfig.getMaxDelay() - applicationConfig.getInitialDelay()) + 1)
@@ -58,8 +69,12 @@ public class SchedulerServiceImpl implements SchedulerService {
 			randomDelay = schedulableTask.getRandomDelay();
 		}
 
+		if (schedulableTask.getPosponeDate() != null) {
+			initialDelay = (schedulableTask.getPosponeDate().getTime() - System.currentTimeMillis())/1000;
+		}
+
 		ScheduledFuture<?> future = scheduledExecutorService.scheduleAtFixedRate(schedulableTask.getTask(),
-				applicationConfig.getInitialDelay(), randomDelay, TimeUnit.SECONDS);
+				initialDelay, randomDelay, TimeUnit.SECONDS);
 
 		log.info("task {} is scheduled with {} delay ", schedulableTask.getTaskId(), randomDelay);
 

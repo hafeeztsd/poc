@@ -127,13 +127,6 @@ public class ServiceExceptionAdvisor extends ResponseEntityExceptionHandler {
 	}
 
 	private ResponseEntity<Object> responseEntity(ErrorResponse errorResponse) {
-		System.out.println("===========");
-		System.out.println("error response: " + errorResponse);
-		System.out.println(
-				"error response message : " + errorResponse.getMessage() + " code: " + errorResponse.getCode());
-
-		System.out.println("===========");
-
 		return new ResponseEntity<>(errorResponse, errorResponse.getHttpStatus());
 	}
 

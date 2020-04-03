@@ -1,5 +1,6 @@
 package com.ous.poc.controller;
 
+import java.text.ParseException;
 import java.util.UUID;
 
 import javax.validation.Valid;
@@ -18,11 +19,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ous.poc.model.Pageable;
 import com.ous.poc.model.CreateTaskRequest;
+import com.ous.poc.model.Pageable;
+import com.ous.poc.model.SuspendTaskRequest;
 import com.ous.poc.model.TaskResponse;
 import com.ous.poc.model.Tasks;
 import com.ous.poc.service.TaskService;
+import com.ous.poc.util.DateUtils;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -113,8 +116,14 @@ public class TaskController {
 			@ApiResponse(code = HttpStatus.SC_INTERNAL_SERVER_ERROR, message = "Error Code 500 will be thrown to indicate something wrong with the system.") })
 
 	@PutMapping("/{taskId}/suspend")
-	public TaskResponse suspendTask(@PathVariable @ApiParam(value = "taskId") @Valid String taskId) {
-		return taskService.suspendTask(taskId);
+	public TaskResponse suspendTask(@PathVariable @ApiParam(value = "taskId") @Valid String taskId,
+			@ApiParam(value = "datetime format is yyyy-MM-dd HH:mm:ss") @RequestBody SuspendTaskRequest request) throws ParseException {
+		if (request.getDatetime() != null && !request.getDatetime().isEmpty()) {
+			return taskService.suspendTaskTill(taskId,DateUtils.parseDate(request.getDatetime()));			
+		} else {
+			return taskService.suspendTask(taskId);			
+		}
+
 	}
 
 	@ApiOperation(value = "PUT operation. Resume a task against given taskId. Task will no more be in SUSPENDED state after it.", response = TaskResponse.class)

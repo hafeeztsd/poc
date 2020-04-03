@@ -3,6 +3,7 @@ package com.ous.poc.service.impl;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -99,6 +100,21 @@ public class TaskServiceImpl implements TaskService {
 			return modelMapper.map(t, TaskResponse.class);
 		}).orElseThrow(() -> new ServiceException(Error.NOT_FOUND, Task.class.getSimpleName()));
 	}
+	
+	@Override
+	public TaskResponse suspendTaskTill(String taskId, Date posponeDate) {
+		return taskRepository.findById(taskId).map(t -> {
+			schedulerService.deleteTask(taskId);
+			SchedulableTask schedulableTask = new SchedulableTask(t.getId(), t.getDelayInSeconds(), posponeDate, new TaskExecution(t));
+			int randomDelay = schedulerService.scheduleTask(schedulableTask);
+			long time  = (randomDelay*1000) + posponeDate.getTime()  ;
+			t.setDueAt(new Date(time));
+			t.setStatus(TaskStatus.SUSPENDED.getValue());
+			Task persistedTask = taskRepository.save(t);
+			return modelMapper.map(persistedTask, TaskResponse.class);
+		}).orElseThrow(() -> new ServiceException(Error.NOT_FOUND, Task.class.getSimpleName()));
+
+	}
 
 	@Override
 	public TaskResponse resumeTask(String taskId) {
@@ -178,5 +194,5 @@ public class TaskServiceImpl implements TaskService {
 		}
 
 	}
-
+	
 }

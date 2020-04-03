@@ -1,5 +1,7 @@
 package com.ous.poc.service;
 
+import java.util.Date;
+
 import com.ous.poc.exception.ServiceException;
 import com.ous.poc.model.CreateTaskRequest;
 import com.ous.poc.model.Pageable;
@@ -60,6 +62,18 @@ public interface TaskService {
 	 * 			ServiceException} in case task does not exist in the system.
 	 */
 	TaskResponse suspendTask(String taskId);
+
+	/**
+	 * Similar to suspendTask except it will suspend the task till provided. Task
+	 * will be automatically resumed after the provided date time.
+	 * 
+	 * @param taskId
+	 * @param posponeDate
+	 * @return suspend task identified by provided taskId.
+	 * @throws @{@link
+	 * 			ServiceException} in case task does not exist in the system.
+	 */
+	TaskResponse suspendTaskTill(String taskId, Date posponeDate);
 
 	/**
 	 * 

@@ -79,7 +79,6 @@
 						window.setTimeout(function(){location.reload()},1000)
 					},
 					error: function(err) {
-					alert("error --> " + JSON.stringify(err));
 						$("#msg").html( "<span style='color: red'>" + JSON.stringify(err) +"</span>" );
 					}
 				});
@@ -110,11 +109,14 @@
 			
 			$(document).delegate('.edit', 'click', function() {
 				if (confirm('Do you really want to suspend task?')) {
+					var postponeDateTime = prompt("Optional: Enter the date & time in format yyyy-MM-dd HH:mm:ss");
 					var id = $(this).attr('id');
 					var parent = $(this).parent().parent();
 					$.ajax({
 						type: "PUT",
+						contentType: "application/json; charset=utf-8",
 						url: "/task/" + id + "/suspend",
+						data: JSON.stringify({'datetime': postponeDateTime}),
 						cache: false,
 						success: function() {
 							parent.fadeOut('slow', function() {
