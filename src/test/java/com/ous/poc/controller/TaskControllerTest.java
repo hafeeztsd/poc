@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ous.poc.Application;
 import com.ous.poc.model.CreateTaskRequest;
+import com.ous.poc.model.SuspendTaskRequest;
 import com.ous.poc.model.TaskResponse;
 import com.ous.poc.model.TaskStatus;
 
@@ -152,7 +153,9 @@ public class TaskControllerTest {
 
 		String uri = TASK_ENDPOINT + "/" + response.getId().toString() + "/suspend";
 
-		mvc.perform(put(uri).contentType(MediaType.APPLICATION_JSON)).andDo(print())
+		SuspendTaskRequest suspendTaskRequest = new SuspendTaskRequest();
+		jsonPayload = OBJECT_MAPPER.writeValueAsString(suspendTaskRequest);
+		mvc.perform(put(uri).contentType(MediaType.APPLICATION_JSON).content(jsonPayload)).andDo(print())
 				.andExpect(status().is2xxSuccessful())
 				.andExpect(jsonPath("$.status", is(TaskStatus.SUSPENDED.getValue())));
 
