@@ -22,7 +22,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<spring-cloud.version>Hoxton.SR1</spring-cloud.version>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<swagger.version>2.9.2</swagger.version>
+		<swagger.version>2.10.0</swagger.version>
 		<javax.validation.version>2.0.1.Final</javax.validation.version>
 		<model.mapper.version>2.3.2</model.mapper.version>
 	</properties>
